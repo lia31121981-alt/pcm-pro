@@ -1,0 +1,5 @@
+{
+  "routes": [
+    { "src": "/", "dest": "/PCM-PRO-9.html" }
+  ]
+}
