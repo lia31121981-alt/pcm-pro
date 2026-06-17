@@ -1,5 +1,5 @@
 {
   "routes": [
-    { "src": "/", "dest": "/PCM-PRO-9.html" }
+    { "src": "/", "dest": "/PCM-PRO-AUTO.html" }
   ]
 }
