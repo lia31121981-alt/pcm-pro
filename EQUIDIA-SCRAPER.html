@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EQUIDIA SCRAPER — Collecte RK Automatique</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080c10;--sur:#0e1419;--sur2:#141c24;--bor:#1e2d3d;
+  --acc:#00d4ff;--grn:#00e87a;--red:#ff4455;--org:#ff8c00;
+  --txt:#c8d8e8;--mut:#506070;--yel:#f0d060;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Sans',sans-serif;min-height:100dvh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:1rem;}
+
+header{text-align:center;padding:1.2rem 0 0.8rem;border-bottom:1px solid var(--bor);margin-bottom:1rem;}
+header .eye{font-family:'IBM Plex Mono',monospace;font-size:0.52rem;letter-spacing:5px;color:var(--acc);text-transform:uppercase;margin-bottom:0.3rem;}
+header h1{font-family:'Bebas Neue',sans-serif;font-size:2.6rem;letter-spacing:8px;color:#fff;line-height:1;}
+header h1 span{color:var(--acc);}
+header .sub{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--mut);margin-top:0.3rem;letter-spacing:2px;}
+
+.stats-bar{display:flex;gap:1rem;justify-content:center;margin-top:0.75rem;flex-wrap:wrap;}
+.stat-pill{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--mut);background:var(--sur);border:1px solid var(--bor);border-radius:20px;padding:0.18rem 0.65rem;display:flex;align-items:center;gap:0.35rem;}
+.stat-pill strong{color:var(--acc);font-size:0.7rem;}
+
+.section{background:var(--sur);border:1px solid var(--bor);border-radius:6px;margin-bottom:1rem;overflow:hidden;}
+.section-head{padding:0.65rem 1rem;border-bottom:1px solid var(--bor);}
+.section-head h2{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:3px;text-transform:uppercase;color:var(--acc);}
+.section-body{padding:0.85rem 1rem;}
+
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.85rem;}
+.cfg-group{display:flex;flex-direction:column;gap:0.22rem;}
+.cfg-group label{font-family:'IBM Plex Mono',monospace;font-size:0.52rem;letter-spacing:2px;color:var(--mut);text-transform:uppercase;}
+.cfg-group input,.cfg-group select{background:var(--bg);border:1px solid var(--bor);border-radius:3px;color:var(--txt);font-family:'IBM Plex Mono',monospace;font-size:0.72rem;padding:0.38rem 0.55rem;outline:none;width:100%;}
+.cfg-group input:focus,.cfg-group select:focus{border-color:var(--acc);}
+
+.btn-start{width:100%;background:var(--grn);color:var(--bg);border:none;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:0.7rem;cursor:pointer;margin-top:0.5rem;}
+.btn-stop{width:100%;background:var(--red);color:#fff;border:none;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:0.7rem;cursor:pointer;margin-top:0.5rem;display:none;}
+.btn-export{background:var(--sur2);color:var(--grn);border:1px solid rgba(0,232,122,0.3);border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:0.5rem 0.85rem;cursor:pointer;}
+.btn-import{background:var(--sur2);color:var(--acc);border:1px solid rgba(0,212,255,0.3);border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:0.5rem 0.85rem;cursor:pointer;}
+.btn-clear{background:none;color:var(--red);border:1px solid rgba(255,68,85,0.3);border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;padding:0.38rem 0.65rem;cursor:pointer;}
+
+/* Progress */
+.progress-wrap{margin:0.75rem 0;}
+.progress-bar{height:6px;background:var(--bor);border-radius:6px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--grn));border-radius:6px;transition:width 0.3s;width:0%;}
+.progress-label{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--mut);margin-top:0.35rem;display:flex;justify-content:space-between;}
+
+/* Log */
+.log-box{background:var(--bg);border:1px solid var(--bor);border-radius:4px;padding:0.6rem;height:200px;overflow-y:auto;font-family:'IBM Plex Mono',monospace;font-size:0.58rem;line-height:1.7;}
+.log-box .ok{color:var(--grn);}
+.log-box .err{color:var(--red);}
+.log-box .info{color:var(--acc);}
+.log-box .warn{color:var(--org);}
+.log-box .dim{color:var(--mut);}
+
+/* Table résultats */
+.rk-table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;}
+.rk-table th{background:var(--sur2);color:var(--acc);font-size:0.5rem;letter-spacing:2px;text-transform:uppercase;padding:0.38rem 0.5rem;text-align:left;border-bottom:2px solid var(--bor);white-space:nowrap;}
+.rk-table td{padding:0.32rem 0.5rem;border-bottom:1px solid rgba(30,45,61,0.5);vertical-align:middle;white-space:nowrap;}
+.rk-table tr:hover td{background:rgba(0,212,255,0.03);}
+.rk-val{color:var(--grn);font-weight:700;}
+.badge-ok{display:inline-block;padding:0.05rem 0.28rem;border-radius:3px;font-size:0.48rem;font-weight:700;background:rgba(0,232,122,0.1);color:var(--grn);border:1px solid rgba(0,232,122,0.2);}
+.badge-p{display:inline-block;padding:0.05rem 0.28rem;border-radius:3px;font-size:0.48rem;font-weight:700;background:rgba(255,140,0,0.1);color:var(--org);border:1px solid rgba(255,140,0,0.2);}
+.empty{text-align:center;padding:1.5rem;color:var(--mut);font-family:'IBM Plex Mono',monospace;font-size:0.65rem;}
+
+.toolbar{display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-bottom:0.75rem;}
+.results-title{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:3px;color:var(--acc);text-transform:uppercase;}
+.results-count{font-family:'IBM Plex Mono',monospace;font-size:0.56rem;color:var(--mut);}
+
+@media(max-width:600px){
+  header h1{font-size:2rem;}
+  .cfg-grid{grid-template-columns:1fr;}
+  .rk-table th,.rk-table td{padding:0.28rem 0.3rem;font-size:0.56rem;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eye">Trot Français · Collecte Automatique</div>
+  <h1>EQUIDIA <span>SCRAPER</span></h1>
+  <div class="sub">Récupération automatique des RK vainqueurs · Attelé &amp; Monté · 3 ans</div>
+  <div class="stats-bar">
+    <div class="stat-pill">Courses traitées <strong id="s-courses">0</strong></div>
+    <div class="stat-pill">RK collectés <strong id="s-rk">0</strong></div>
+    <div class="stat-pill">Groupes Attelé <strong id="s-att">0</strong></div>
+    <div class="stat-pill">Groupes Monté <strong id="s-mon">0</strong></div>
+    <div class="stat-pill">Groupes validés <strong id="s-valid">0</strong></div>
+  </div>
+</header>
+
+<!-- CONFIG -->
+<div class="section">
+  <div class="section-head"><h2>⚙️ Configuration</h2></div>
+  <div class="section-body">
+    <div class="cfg-grid">
+      <div class="cfg-group">
+        <label>Date de début</label>
+        <input type="date" id="dateFrom" value="2023-06-21">
+      </div>
+      <div class="cfg-group">
+        <label>Date de fin</label>
+        <input type="date" id="dateTo" value="2026-06-21">
+      </div>
+      <div class="cfg-group">
+        <label>Proxy Vercel URL</label>
+        <input type="text" id="proxyUrl" value="https://pcm-pro-b.vercel.app/api/proxy" placeholder="https://...vercel.app/api/proxy">
+      </div>
+      <div class="cfg-group">
+        <label>Délai entre requêtes (ms)</label>
+        <input type="number" id="delay" value="1500" min="500" max="5000">
+      </div>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--mut);margin-bottom:0.5rem;line-height:1.7">
+      ⚠️ L'outil va parcourir toutes les journées de courses Equidia entre les deux dates.<br>
+      Pour chaque vainqueur trot, il récupère son RK et l'ajoute à la base.<br>
+      <strong style="color:var(--org)">Estimation : ~3000 jours × 5 courses/jour = ~15 000 requêtes. Durée : plusieurs heures.</strong><br>
+      Laisse l'outil tourner en arrière-plan. Les données sont sauvegardées automatiquement.
+    </div>
+    <button class="btn-start" id="btn-start" onclick="startScraping()">▶ LANCER LA COLLECTE</button>
+    <button class="btn-stop" id="btn-stop" onclick="stopScraping()">⏹ ARRÊTER</button>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="section">
+  <div class="section-head"><h2>📡 Progression</h2></div>
+  <div class="section-body">
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+      <div class="progress-label">
+        <span id="prog-txt">En attente...</span>
+        <span id="prog-pct">0%</span>
+      </div>
+    </div>
+    <div class="log-box" id="log-box">
+      <span class="dim">En attente du lancement...</span>
+    </div>
+  </div>
+</div>
+
+<!-- RÉSULTATS -->
+<div class="section">
+  <div class="section-head"><h2>📊 Base collectée</h2></div>
+  <div class="section-body">
+    <div style="display:flex;gap:0.5rem;margin-bottom:0.85rem;flex-wrap:wrap">
+      <button class="btn-export" onclick="exportDb()">⬇️ EXPORTER JSON</button>
+      <button class="btn-import" onclick="document.getElementById('importFile').click()">⬆️ IMPORTER JSON</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importDb(event)">
+      <button class="btn-clear" onclick="clearDb()" style="margin-left:auto">🗑 Effacer</button>
+    </div>
+    <div class="toolbar">
+      <div class="results-title">Derniers RK collectés</div>
+      <div class="results-count" id="res-count"></div>
+    </div>
+    <div id="res-container">
+      <div class="empty">Lance la collecte pour voir les résultats apparaître ici</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ===== ÉTAT =====
+const DB_KEY = 'rk_analyst_db';
+const SCRAPER_KEY = 'equidia_scraper_state';
+let db = { att: {}, mon: {} };
+let running = false;
+let stopFlag = false;
+let recentResults = []; // derniers RK collectés pour affichage
+
+// ===== UTILS =====
+function fmt(s){
+  if(s==null||isNaN(s)) return '—';
+  const m=Math.floor(s/60);
+  const r=s-m*60;
+  const sm=Math.floor(r);
+  const d=Math.round((r-sm)*10);
+  return m+"'"+String(sm).padStart(2,'0')+'"'+d;
+}
+
+function parseTime(str){
+  if(!str) return null;
+  const m=str.replace(/['']/g,"'").replace(/[""]/g,'"').match(/(\d+)'(\d{2})"(\d)/);
+  if(!m) return null;
+  return parseInt(m[1])*60+parseInt(m[2])+parseInt(m[3])*0.1;
+}
+
+function fmtAlloc(n){
+  if(!n) return '—';
+  if(n>=1000000) return (n/1000000).toFixed(1)+'M€';
+  if(n>=1000) return Math.round(n/1000)+'k€';
+  return n+'€';
+}
+
+function normHippo(raw){
+  if(!raw) return null;
+  raw = raw.trim()
+    .replace(/PARIS-VINCENNES/i,'Vincennes')
+    .replace(/PARIS VINCENNES/i,'Vincennes')
+    .replace(/VINCENNES/i,'Vincennes')
+    .replace(/ENGHIEN[-\s]SOISY/i,'Enghien Soisy')
+    .replace(/ENGHIEN/i,'Enghien Soisy')
+    .replace(/CAGNES[-\s]SUR[-\s]MER/i,'Cagnes Sur Mer')
+    .replace(/MARSEILLE[-\s]BORELY/i,'Marseille Borely')
+    .replace(/MARSEILLE[-\s]VIVAUX/i,'Marseille Vivaux')
+    .replace(/LYON[-\s]PARILLY/i,'Lyon Parilly')
+    .replace(/LYON[-\s]LA[-\s]SOIE/i,'Lyon La Soie')
+    .replace(/BEAUMONT[-\s]DE[-\s]LOMAGNE/i,'Beaumont De Lomagne')
+    .replace(/LE[-\s]CROISE[-\s]LAROCHE/i,'Le Croise Laroche')
+    .replace(/LE[-\s]MANS/i,'Le Mans')
+    .replace(/SAINT[-\s]BRIEUC/i,'Saint Brieuc')
+    .replace(/SAINT[-\s]MALO/i,'Saint Malo')
+    .replace(/SAINT[-\s]OMER/i,'Saint Omer')
+    .replace(/SAINT[-\s]GALMIER/i,'Saint Galmier')
+    .replace(/SALON[-\s]DE[-\s]PROVENCE/i,'Salon De Provence')
+    .replace(/MESLAY[-\s]DU[-\s]MAINE/i,'Meslay Du Maine')
+    .replace(/MAURE[-\s]DE[-\s]BRETAGNE/i,'Maure De Bretagne')
+    .replace(/LA[-\s]ROCHELLE/i,'La Rochelle')
+    .replace(/GRENADE[-\s]SUR[-\s]GARONNE/i,'Grenade Sur Garonne')
+    .replace(/PORNICHET[-\s]LA[-\s]BAULE/i,'Pornichet La Baule')
+    .replace(/BORDEAUX[-\s]LE[-\s]BOUSCAT/i,'Bordeaux Le Bouscat')
+    .replace(/LES[-\s]SABLES[-\s]D'OLONNE/i,"Les Sables D'Olonne")
+    .replace(/DIVONNE[-\s]LES[-\s]BAINS/i,'Divonne Les Bains')
+    .replace(/PONTCHATEAU/i,'Pontchateau')
+    .replace(/MAUQUENCHY/i,'Mauquenchy')
+    .replace(/MACHECOUL/i,'Machecoul')
+    .replace(/GRAIGNES/i,'Graignes')
+    .replace(/CASTERA[-\s]VERDUZAN/i,'Castera Verduzan')
+    .replace(/AGEN[-\s]LA[-\s]GARENNE/i,'Agen')
+    .replace(/AGEN[-\s]LE[-\s]PASSAGE/i,'Agen');
+
+  // Capitaliser proprement
+  return raw.split(/\s+/).map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' ');
+}
+
+function getAge(anneeNaissance, dateStr){
+  if(!anneeNaissance||!dateStr) return null;
+  const parts = dateStr.match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
+  if(!parts) return null;
+  let year = parseInt(parts[3]);
+  if(year < 100) year += 2000;
+  const age = year - anneeNaissance;
+  if(age < 3 || age > 20) return null;
+  return age >= 7 ? '7+' : String(age);
+}
+
+function groupKey(hippo, dist, mode, age, alloc){
+  return `${hippo}|${dist}|${mode}|${age}|${alloc}`;
+}
+
+function recalcGroupe(grp){
+  const total = grp.courses.length;
+  const nb = Math.floor(total/5);
+  grp.tranches = [];
+  for(let t=0;t<nb;t++){
+    const slice = grp.courses.slice(t*5,(t+1)*5);
+    const moy = slice.reduce((s,c)=>s+c.rk,0)/slice.length;
+    grp.tranches.push(Math.round(moy*10)/10);
+  }
+  grp.moyenne = grp.tranches.length>0
+    ? Math.round((grp.tranches.reduce((s,t)=>s+t,0)/grp.tranches.length)*10)/10
+    : null;
+}
+
+// ===== LOCALSTORAGE =====
+function saveDb(){
+  try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch(e){}
+}
+function loadDb(){
+  try { const r=localStorage.getItem(DB_KEY); if(r) db=JSON.parse(r); } catch(e){}
+}
+function saveScraperState(state){
+  try { localStorage.setItem(SCRAPER_KEY, JSON.stringify(state)); } catch(e){}
+}
+function loadScraperState(){
+  try { const r=localStorage.getItem(SCRAPER_KEY); return r?JSON.parse(r):null; } catch(e){ return null; }
+}
+
+// ===== LOG =====
+function log(msg, type='info'){
+  const box = document.getElementById('log-box');
+  const line = document.createElement('div');
+  line.className = type;
+  const time = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  line.textContent = `[${time}] ${msg}`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+  // Limiter à 200 lignes
+  while(box.children.length > 200) box.removeChild(box.firstChild);
+}
+
+// ===== STATS =====
+function updateStats(){
+  const attGrp = Object.keys(db.att).length;
+  const monGrp = Object.keys(db.mon).length;
+  const totalCourses = [...Object.values(db.att),...Object.values(db.mon)].reduce((s,g)=>s+g.courses.length,0);
+  const validGrp = [...Object.values(db.att),...Object.values(db.mon)].filter(g=>g.moyenne!=null).length;
+  const totalRk = [...Object.values(db.att),...Object.values(db.mon)].reduce((s,g)=>s+g.courses.length,0);
+  document.getElementById('s-courses').textContent = totalCourses;
+  document.getElementById('s-rk').textContent = totalRk;
+  document.getElementById('s-att').textContent = attGrp;
+  document.getElementById('s-mon').textContent = monGrp;
+  document.getElementById('s-valid').textContent = validGrp;
+}
+
+// ===== PROXY FETCH =====
+async function proxyFetch(url){
+  const proxy = document.getElementById('proxyUrl').value.trim();
+  const fullUrl = `${proxy}?url=${encodeURIComponent(url)}`;
+  const resp = await fetch(fullUrl);
+  if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return await resp.text();
+}
+
+// ===== PARSER EQUIDIA COURSE =====
+function parseCourseHtml(html, dateStr){
+  const courses = [];
+  
+  // Discipline (Attelé ou Monté)
+  const discMatch = html.match(/Discipline\s*<\/[^>]+>\s*<[^>]+>\s*(Attel[eé]|Mont[eé])/i)
+    || html.match(/(Attel[eé]|Mont[eé])\s*<\/div>/i)
+    || html.match(/meta-description[^>]*>(.*?)<\/meta/i);
+  
+  // Chercher dans meta-description
+  const metaDesc = html.match(/meta-description:\s*([^\n]+)/);
+  if(!metaDesc) return courses;
+  
+  const meta = metaDesc[1];
+  
+  // Discipline
+  const discM = meta.match(/(Attel[eé]|Mont[eé])/i);
+  if(!discM) return courses; // Pas une course trot
+  const disc = discM[1].toLowerCase().includes('mont') ? 'mon' : 'att';
+  
+  // Distance
+  const distM = meta.match(/(\d+)\s*M/);
+  if(!distM) return courses;
+  const dist = parseInt(distM[1]);
+  
+  // Allocation
+  const allocM = meta.match(/([\d\s]+)[€\u20ac]/);
+  const alloc = allocM ? parseInt(allocM[1].replace(/\s/g,'')) : null;
+  
+  // Hippodrome depuis le titre
+  const hippoM = html.match(/# \*\*R\d+\*\* ([A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ][^\*]+?)\s+\*\*C\d+\*\*/);
+  const hippo = hippoM ? normHippo(hippoM[1].trim()) : null;
+  if(!hippo) return courses;
+  
+  // Mode départ (Autostart)
+  const isAuto = /AUTOSTART/i.test(meta) || /AUTOSTART/i.test(html);
+  const mode = isAuto ? 'A' : 'V';
+  
+  // Trouver le vainqueur (Arrivé : 1er)
+  const winner1 = html.match(/([A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ][A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ\s''-]+?)\s*-\s*Arriv[eé]\s*:\s*1er/);
+  if(!winner1) return courses;
+  const winnerName = winner1[1].trim().toLowerCase().replace(/\s+/g,'-');
+  
+  courses.push({ disc, dist, alloc, hippo, mode, dateStr, winnerName });
+  return courses;
+}
+
+// ===== PARSER FICHE CHEVAL EQUIDIA =====
+function parseCheval(html, winnerName, targetDate, dist, hippoCourse){
+  // Extraire l'année de naissance
+  const ageM = html.match(/Age\s*:\s*(\d+)\s*ans,\s*(\d{4})/);
+  const anneeNaissance = ageM ? parseInt(ageM[2]) : null;
+  
+  // Chercher dans le tableau des performances la course correspondante
+  // Format: | 10/06/26 | ... | HIPPODROME | ... | dist | classement | ... | RK |
+  
+  // Normaliser la date cible pour comparaison
+  const parts = targetDate.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if(!parts) return null;
+  const year2 = parts[1].slice(2); // 26
+  const shortDate = `${parts[3]}/${parts[2]}/${year2}`; // JJ/MM/AA
+  
+  // Chercher la ligne de performance correspondante
+  // Pattern dans le HTML Equidia: | 08/03/26 | ... RK 1'08"60
+  const lines = html.split('\n');
+  let foundDate = false;
+  let rk = null;
+  let age = null;
+  
+  for(let i=0; i<lines.length; i++){
+    const l = lines[i];
+    
+    // Trouver la ligne avec la date
+    if(l.includes(shortDate)){
+      foundDate = true;
+      // Chercher le RK dans les lignes suivantes (dans les 10 lignes)
+      for(let j=i; j<Math.min(i+15, lines.length); j++){
+        const rkM = lines[j].match(/(\d'[\d]+"[\d]{1,2})/);
+        if(rkM){
+          rk = parseTime(rkM[1]);
+          if(rk) break;
+        }
+      }
+      break;
+    }
+  }
+  
+  if(!rk) return null;
+  
+  // Calculer l'âge
+  age = getAge(anneeNaissance, targetDate.replace(/-/g,'/').split('/').reverse().join('/'));
+  if(!age && anneeNaissance){
+    const yr = parseInt(parts[1]);
+    const ageNum = yr - anneeNaissance;
+    age = ageNum >= 7 ? '7+' : String(ageNum);
+  }
+  if(!age) return null;
+  
+  return { rk, age };
+}
+
+// ===== AJOUTER À LA BASE =====
+function addToDb(hippo, dist, mode, age, alloc, disc, rk, dateStr, winnerName){
+  const discKey = disc;
+  const key = groupKey(hippo, dist, mode, age, alloc);
+  if(!db[discKey][key]){
+    db[discKey][key] = {
+      hippo, dist, mode, age, alloc, disc,
+      courses: [], tranches: [], moyenne: null
+    };
+  }
+  const grp = db[discKey][key];
+  // Éviter les doublons
+  const dup = grp.courses.some(c=>c.date===dateStr&&c.cheval===winnerName);
+  if(dup) return false;
+  grp.courses.push({ date: dateStr, cheval: winnerName, rang: 1, rk, ferrure: 'N/A', age });
+  recalcGroupe(grp);
+  return true;
+}
+
+// ===== GÉNÉRER LES DATES =====
+function getDates(from, to){
+  const dates = [];
+  const cur = new Date(from);
+  const end = new Date(to);
+  while(cur <= end){
+    dates.push(cur.toISOString().slice(0,10));
+    cur.setDate(cur.getDate()+1);
+  }
+  return dates;
+}
+
+// ===== SCRAPING PRINCIPAL =====
+async function startScraping(){
+  if(running) return;
+  running = true;
+  stopFlag = false;
+  
+  document.getElementById('btn-start').style.display='none';
+  document.getElementById('btn-stop').style.display='block';
+  
+  const dateFrom = document.getElementById('dateFrom').value;
+  const dateTo = document.getElementById('dateTo').value;
+  const delay = parseInt(document.getElementById('delay').value)||1500;
+  
+  // Charger l'état sauvegardé pour reprendre
+  const savedState = loadScraperState();
+  const dates = getDates(dateFrom, dateTo);
+  let startIdx = 0;
+  
+  if(savedState && savedState.lastDate){
+    const idx = dates.indexOf(savedState.lastDate);
+    if(idx > 0){
+      startIdx = idx;
+      log(`Reprise depuis ${savedState.lastDate} (${idx}/${dates.length} jours déjà traités)`, 'info');
+    }
+  }
+  
+  log(`Démarrage collecte : ${dates.length} jours à traiter`, 'info');
+  log(`De ${dateFrom} à ${dateTo}`, 'dim');
+  
+  let totalRkAdded = 0;
+  
+  for(let di=startIdx; di<dates.length && !stopFlag; di++){
+    const dateStr = dates[di];
+    const pct = Math.round((di/dates.length)*100);
+    document.getElementById('prog-fill').style.width=pct+'%';
+    document.getElementById('prog-pct').textContent=pct+'%';
+    document.getElementById('prog-txt').textContent=`Jour ${di+1}/${dates.length} — ${dateStr}`;
+    
+    // Sauvegarder l'état
+    saveScraperState({ lastDate: dateStr, totalRkAdded });
+    
+    // Essayer jusqu'à 15 courses par jour
+    let courseIdx = 1;
+    let emptyStreak = 0;
+    
+    while(courseIdx <= 15 && !stopFlag){
+      // Essayer R1 à R5 pour chaque course
+      for(let ri=1; ri<=5 && !stopFlag; ri++){
+        const url = `https://www.equidia.fr/courses/${dateStr}/R${ri}/C${courseIdx}`;
+        
+        try {
+          await sleep(delay);
+          if(stopFlag) break;
+          
+          const html = await proxyFetch(url);
+          
+          // Vérifier si c'est une course trot
+          const metaDesc = html.match(/meta-description:\s*([^\n]+)/);
+          if(!metaDesc){ emptyStreak++; if(emptyStreak>3) break; continue; }
+          
+          const meta = metaDesc[1];
+          if(!/Attel[eé]|Mont[eé]/i.test(meta)){ emptyStreak=0; continue; }
+          
+          emptyStreak = 0;
+          const parsed = parseCourseHtml(html, dateStr);
+          
+          for(const course of parsed){
+            log(`📍 ${dateStr} R${ri}C${courseIdx} ${course.hippo} ${course.dist}m ${course.disc.toUpperCase()} — vainqueur: ${course.winnerName}`, 'dim');
+            
+            // Récupérer la fiche du vainqueur
+            await sleep(delay);
+            if(stopFlag) break;
+            
+            try {
+              const chevHtml = await proxyFetch(`https://www.equidia.fr/chevaux/${course.winnerName}`);
+              const result = parseCheval(chevHtml, course.winnerName, dateStr, course.dist, course.hippo);
+              
+              if(result){
+                const added = addToDb(
+                  course.hippo, course.dist, course.mode,
+                  result.age, course.alloc, course.disc,
+                  result.rk, dateStr, course.winnerName
+                );
+                if(added){
+                  totalRkAdded++;
+                  log(`✅ RK ajouté: ${course.hippo} ${course.dist}m ${course.mode} ${result.age}ans ${fmtAlloc(course.alloc)} → ${fmt(result.rk)}`, 'ok');
+                  addRecentResult(course, result);
+                  if(totalRkAdded % 10 === 0){
+                    saveDb();
+                    updateStats();
+                    renderResults();
+                  }
+                }
+              } else {
+                log(`⚠️ RK non trouvé pour ${course.winnerName} le ${dateStr}`, 'warn');
+              }
+            } catch(e){
+              log(`❌ Erreur fiche ${course.winnerName}: ${e.message}`, 'err');
+            }
+          }
+          
+          // Une seule réunion principale par course
+          break;
+          
+        } catch(e){
+          if(e.message.includes('404') || e.message.includes('403')){
+            break; // Pas de course à cet index
+          }
+          log(`❌ Erreur ${url}: ${e.message}`, 'err');
+          await sleep(2000);
+        }
+      }
+      
+      courseIdx++;
+      if(emptyStreak > 5) break;
+    }
+  }
+  
+  // Sauvegarde finale
+  saveDb();
+  updateStats();
+  renderResults();
+  
+  running = false;
+  stopFlag = false;
+  document.getElementById('btn-start').style.display='block';
+  document.getElementById('btn-stop').style.display='none';
+  document.getElementById('prog-fill').style.width='100%';
+  document.getElementById('prog-pct').textContent='100%';
+  
+  if(!stopFlag){
+    log(`✅ Collecte terminée ! ${totalRkAdded} RK ajoutés`, 'ok');
+    localStorage.removeItem(SCRAPER_KEY);
+  } else {
+    log(`⏹ Collecte arrêtée. ${totalRkAdded} RK ajoutés. Reprendra depuis la dernière date sauvegardée.`, 'warn');
+  }
+}
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function stopScraping(){
+  stopFlag = true;
+  log('Arrêt en cours...', 'warn');
+}
+
+// ===== AFFICHAGE RÉCENT =====
+function addRecentResult(course, result){
+  recentResults.unshift({
+    date: course.dateStr,
+    hippo: course.hippo,
+    dist: course.dist,
+    mode: course.mode,
+    disc: course.disc,
+    age: result.age,
+    alloc: course.alloc,
+    rk: result.rk,
+    winner: course.winnerName
+  });
+  if(recentResults.length > 50) recentResults.pop();
+}
+
+function renderResults(){
+  const container = document.getElementById('res-container');
+  document.getElementById('res-count').textContent = recentResults.length + ' derniers';
+  
+  if(!recentResults.length){
+    container.innerHTML='<div class="empty">Lance la collecte pour voir les résultats</div>';
+    return;
+  }
+  
+  let h = '<div style="overflow-x:auto"><table class="rk-table"><thead><tr>';
+  h += '<th>Date</th><th>Hippodrome</th><th>Dist.</th><th>Mode</th><th>Disc.</th><th>Âge</th><th>Alloc.</th><th>RK</th><th>Vainqueur</th>';
+  h += '</tr></thead><tbody>';
+  
+  for(const r of recentResults){
+    h += `<tr>
+      <td style="color:var(--mut)">${r.date}</td>
+      <td style="font-weight:600">${r.hippo}</td>
+      <td style="color:var(--acc)">${r.dist}m</td>
+      <td style="color:var(--mut)">${r.mode==='A'?'Auto':'Volté'}</td>
+      <td><span class="${r.disc==='att'?'badge-ok':'badge-p'}">${r.disc==='att'?'ATT':'MON'}</span></td>
+      <td style="color:var(--org)">${r.age} ans</td>
+      <td style="color:var(--mut)">${fmtAlloc(r.alloc)}</td>
+      <td class="rk-val">${fmt(r.rk)}</td>
+      <td style="color:var(--mut);font-size:0.55rem">${r.winner}</td>
+    </tr>`;
+  }
+  
+  h += '</tbody></table></div>';
+  container.innerHTML = h;
+}
+
+// ===== EXPORT/IMPORT =====
+function exportDb(){
+  const data = JSON.stringify(db);
+  const blob = new Blob([data],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url;
+  a.download='rk-base-equidia-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importDb(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if(!imported.att||!imported.mon) throw new Error('Format invalide');
+      let added=0;
+      ['att','mon'].forEach(disc=>{
+        Object.entries(imported[disc]||{}).forEach(([key,grp])=>{
+          if(!db[disc][key]){ db[disc][key]=grp; added++; }
+          else {
+            grp.courses.forEach(c=>{
+              const dup=db[disc][key].courses.some(x=>x.date===c.date&&x.cheval===c.cheval);
+              if(!dup){ db[disc][key].courses.push(c); added++; }
+            });
+            recalcGroupe(db[disc][key]);
+          }
+        });
+      });
+      saveDb(); updateStats(); renderResults();
+      log(`✅ Import réussi: ${added} entrées ajoutées`,'ok');
+    } catch(err){ log(`❌ Erreur import: ${err.message}`,'err'); }
+    event.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+function clearDb(){
+  if(!confirm('Effacer toute la base ?')) return;
+  db={att:{},mon:{}};
+  recentResults=[];
+  saveDb(); updateStats(); renderResults();
+  log('Base effacée','warn');
+}
+
+// ===== INIT =====
+loadDb();
+updateStats();
+renderResults();
+setInterval(saveDb, 30000);
+</script>
+</body>
+</html>
