@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PMU SCRAPER — Collecte RK Automatique</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080c10;--sur:#0e1419;--sur2:#141c24;--bor:#1e2d3d;--acc:#00d4ff;--grn:#00e87a;--red:#ff4455;--org:#ff8c00;--txt:#c8d8e8;--mut:#506070;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--txt);font-family:'IBM Plex Sans',sans-serif;min-height:100dvh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:1rem;}
+header{text-align:center;padding:1.2rem 0 0.8rem;border-bottom:1px solid var(--bor);margin-bottom:1rem;}
+header .eye{font-family:'IBM Plex Mono',monospace;font-size:0.52rem;letter-spacing:5px;color:var(--acc);text-transform:uppercase;margin-bottom:0.3rem;}
+header h1{font-family:'Bebas Neue',sans-serif;font-size:2.6rem;letter-spacing:8px;color:#fff;line-height:1;}
+header h1 span{color:var(--acc);}
+header .sub{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--mut);margin-top:0.3rem;letter-spacing:2px;}
+.stats-bar{display:flex;gap:1rem;justify-content:center;margin-top:0.75rem;flex-wrap:wrap;}
+.stat-pill{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--mut);background:var(--sur);border:1px solid var(--bor);border-radius:20px;padding:0.18rem 0.65rem;display:flex;align-items:center;gap:0.35rem;}
+.stat-pill strong{color:var(--acc);font-size:0.7rem;}
+.section{background:var(--sur);border:1px solid var(--bor);border-radius:6px;margin-bottom:1rem;overflow:hidden;}
+.section-head{padding:0.65rem 1rem;border-bottom:1px solid var(--bor);}
+.section-head h2{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:3px;text-transform:uppercase;color:var(--acc);}
+.section-body{padding:0.85rem 1rem;}
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.85rem;}
+.cfg-group{display:flex;flex-direction:column;gap:0.22rem;}
+.cfg-group label{font-family:'IBM Plex Mono',monospace;font-size:0.52rem;letter-spacing:2px;color:var(--mut);text-transform:uppercase;}
+.cfg-group input{background:var(--bg);border:1px solid var(--bor);border-radius:3px;color:var(--txt);font-family:'IBM Plex Mono',monospace;font-size:0.72rem;padding:0.38rem 0.55rem;outline:none;width:100%;}
+.btn-start{width:100%;background:var(--grn);color:var(--bg);border:none;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:0.7rem;cursor:pointer;margin-top:0.5rem;}
+.btn-stop{width:100%;background:var(--red);color:#fff;border:none;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:0.7rem;cursor:pointer;margin-top:0.5rem;display:none;}
+.btn-test{width:100%;background:var(--org);color:var(--bg);border:none;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:0.6rem;cursor:pointer;margin-top:0.5rem;}
+.btn-export{background:var(--sur2);color:var(--grn);border:1px solid rgba(0,232,122,0.3);border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:0.5rem 0.85rem;cursor:pointer;}
+.btn-import{background:var(--sur2);color:var(--acc);border:1px solid rgba(0,212,255,0.3);border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.68rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:0.5rem 0.85rem;cursor:pointer;}
+.btn-clear{background:none;color:var(--red);border:1px solid rgba(255,68,85,0.3);border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.62rem;padding:0.38rem 0.65rem;cursor:pointer;}
+.progress-wrap{margin:0.75rem 0;}
+.progress-bar{height:6px;background:var(--bor);border-radius:6px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--grn));border-radius:6px;transition:width 0.3s;width:0%;}
+.progress-label{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--mut);margin-top:0.35rem;display:flex;justify-content:space-between;}
+.log-box{background:var(--bg);border:1px solid var(--bor);border-radius:4px;padding:0.6rem;height:220px;overflow-y:auto;font-family:'IBM Plex Mono',monospace;font-size:0.58rem;line-height:1.7;}
+.log-box .ok{color:var(--grn);}.log-box .err{color:var(--red);}.log-box .info{color:var(--acc);}.log-box .warn{color:var(--org);}.log-box .dim{color:var(--mut);}
+.rk-table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;}
+.rk-table th{background:var(--sur2);color:var(--acc);font-size:0.5rem;letter-spacing:2px;text-transform:uppercase;padding:0.38rem 0.5rem;text-align:left;border-bottom:2px solid var(--bor);white-space:nowrap;}
+.rk-table td{padding:0.32rem 0.5rem;border-bottom:1px solid rgba(30,45,61,0.5);vertical-align:middle;white-space:nowrap;}
+.rk-val{color:var(--grn);font-weight:700;}
+.badge-ok{display:inline-block;padding:0.05rem 0.28rem;border-radius:3px;font-size:0.48rem;font-weight:700;background:rgba(0,232,122,0.1);color:var(--grn);border:1px solid rgba(0,232,122,0.2);}
+.badge-p{display:inline-block;padding:0.05rem 0.28rem;border-radius:3px;font-size:0.48rem;font-weight:700;background:rgba(176,96,255,0.1);color:#b060ff;border:1px solid rgba(176,96,255,0.2);}
+.empty{text-align:center;padding:1.5rem;color:var(--mut);font-family:'IBM Plex Mono',monospace;font-size:0.65rem;}
+@media(max-width:600px){header h1{font-size:2rem;}.cfg-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eye">Trot Français · Collecte Automatique RK · API PMU</div>
+  <h1>PMU <span>SCRAPER</span></h1>
+  <div class="sub">API PMU officielle · JSON · RK vainqueurs · Attelé &amp; Monté · 3 ans</div>
+  <div class="stats-bar">
+    <div class="stat-pill">Jours traités <strong id="s-jours">0</strong></div>
+    <div class="stat-pill">Courses trot <strong id="s-courses">0</strong></div>
+    <div class="stat-pill">RK ajoutés <strong id="s-rk">0</strong></div>
+    <div class="stat-pill">Groupes ATT <strong id="s-att">0</strong></div>
+    <div class="stat-pill">Groupes MON <strong id="s-mon">0</strong></div>
+    <div class="stat-pill">Validés <strong id="s-valid">0</strong></div>
+  </div>
+</header>
+
+<div class="section">
+  <div class="section-head"><h2>⚙️ Configuration</h2></div>
+  <div class="section-body">
+    <div class="cfg-grid">
+      <div class="cfg-group"><label>Date début</label><input type="date" id="dateFrom" value="2023-06-22"></div>
+      <div class="cfg-group"><label>Date fin</label><input type="date" id="dateTo" value="2026-06-22"></div>
+      <div class="cfg-group"><label>Proxy URL</label><input type="text" id="proxyUrl" value="https://pcm-pro-b.vercel.app/api/proxy"></div>
+      <div class="cfg-group"><label>Délai (ms)</label><input type="number" id="delay" value="400" min="200" max="2000"></div>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;color:var(--mut);margin-bottom:0.5rem;line-height:1.7">
+      ✅ Utilise l'API JSON officielle de PMU.fr — pas de parseur HTML !<br>
+      Données directes : discipline, distance, allocation, hippodrome, vainqueur, âge, RK.<br>
+      <strong style="color:var(--grn)">Reprend automatiquement là où il s'est arrêté.</strong>
+    </div>
+    <button class="btn-start" id="btn-start" onclick="startScraping()">▶ LANCER LA COLLECTE</button>
+    <button class="btn-stop" id="btn-stop" onclick="stopScraping()">⏹ ARRÊTER</button>
+    <button class="btn-test" onclick="testApi()">🔍 TESTER L'API PMU</button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head"><h2>📡 Progression</h2></div>
+  <div class="section-body">
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+      <div class="progress-label"><span id="prog-txt">En attente...</span><span id="prog-pct">0%</span></div>
+    </div>
+    <div class="log-box" id="log-box"><span class="dim">En attente du lancement...</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head"><h2>📊 Base collectée</h2></div>
+  <div class="section-body">
+    <div style="display:flex;gap:0.5rem;margin-bottom:0.85rem;flex-wrap:wrap">
+      <button class="btn-export" onclick="exportDb()">⬇️ EXPORTER JSON</button>
+      <button class="btn-import" onclick="document.getElementById('importFile').click()">⬆️ IMPORTER JSON</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importDb(event)">
+      <button class="btn-clear" onclick="clearDb()" style="margin-left:auto">🗑 Effacer</button>
+    </div>
+    <div id="res-container"><div class="empty">Lance la collecte pour voir les résultats</div></div>
+  </div>
+</div>
+</div>
+
+<script>
+const DB_KEY='rk_analyst_db';
+const SCRAPER_KEY='pmu_scraper_v1';
+let db={att:{},mon:{}};
+let running=false,stopFlag=false;
+let recentRk=[];
+let totalJours=0,totalCourses=0,totalRkAdded=0;
+
+// ===== UTILS =====
+function fmt(s){
+  if(s==null||isNaN(s)) return '—';
+  const m=Math.floor(s/60),r=s-m*60,sm=Math.floor(r),d=Math.round((r-sm)*10);
+  return m+"'"+String(sm).padStart(2,'0')+'"'+d;
+}
+
+// Convertir RK PMU: "1130" → 73.0 secondes (1'13"0)
+function parseRkPmu(rkRaw){
+  if(!rkRaw) return null;
+  const s = String(rkRaw).padStart(4,'0');
+  // Format: MSSD où M=minutes, SS=secondes, D=dixièmes
+  const min = parseInt(s.slice(0,1));
+  const sec = parseInt(s.slice(1,3));
+  const dix = parseInt(s.slice(3,4));
+  const result = min*60 + sec + dix*0.1;
+  if(result < 50 || result > 200) return null; // sanity check
+  return Math.round(result*10)/10;
+}
+
+function fmtAlloc(n){
+  if(!n) return '—';
+  if(n>=1000000) return (n/1000000).toFixed(1)+'M€';
+  if(n>=1000) return Math.round(n/1000)+'k€';
+  return n+'€';
+}
+
+function normHippo(raw){
+  if(!raw) return raw;
+  return raw.trim()
+    .replace(/PARIS[-\s]VINCENNES/gi,'Vincennes')
+    .replace(/^VINCENNES$/i,'Vincennes')
+    .replace(/ENGHIEN[-\s]SOISY/gi,'Enghien Soisy')
+    .replace(/^ENGHIEN$/i,'Enghien Soisy')
+    .replace(/CAGNES[-\s]SUR[-\s]MER/gi,'Cagnes Sur Mer')
+    .replace(/MARSEILLE[-\s]BORELY/gi,'Marseille Borely')
+    .replace(/MARSEILLE[-\s]VIVAUX/gi,'Marseille Vivaux')
+    .replace(/LYON[-\s]PARILLY/gi,'Lyon Parilly')
+    .replace(/LYON[-\s]LA[-\s]SOIE/gi,'Lyon La Soie')
+    .replace(/BEAUMONT[-\s]DE[-\s]LOMAGNE/gi,'Beaumont De Lomagne')
+    .replace(/LE[-\s]CROISE[-\s]LAROCHE/gi,'Le Croise Laroche')
+    .replace(/LE[-\s]MANS/gi,'Le Mans')
+    .replace(/SAINT[-\s]BRIEUC/gi,'Saint Brieuc')
+    .replace(/SAINT[-\s]MALO/gi,'Saint Malo')
+    .replace(/SAINT[-\s]OMER/gi,'Saint Omer')
+    .replace(/SAINT[-\s]GALMIER/gi,'Saint Galmier')
+    .replace(/SALON[-\s]DE[-\s]PROVENCE/gi,'Salon De Provence')
+    .replace(/MESLAY[-\s]DU[-\s]MAINE/gi,'Meslay Du Maine')
+    .replace(/MAURE[-\s]DE[-\s]BRETAGNE/gi,'Maure De Bretagne')
+    .replace(/LA[-\s]ROCHELLE/gi,'La Rochelle')
+    .replace(/GRENADE[-\s]SUR[-\s]GARONNE/gi,'Grenade Sur Garonne')
+    .replace(/PORNICHET[-\s]LA[-\s]BAULE/gi,'Pornichet La Baule')
+    .replace(/BORDEAUX[-\s]LE[-\s]BOUSCAT/gi,'Bordeaux Le Bouscat')
+    .replace(/LES[-\s]SABLES[-\s]D.OLONNE/gi,"Les Sables D'Olonne")
+    .replace(/DIVONNE[-\s]LES[-\s]BAINS/gi,'Divonne Les Bains')
+    .replace(/MONT[-\s]SAINT[-\s]MICHEL/gi,'Le Mont Saint Michel')
+    .replace(/ANGERS[-\s]EVENTARD/gi,'Angers')
+    .replace(/AGEN[-\s]LA[-\s]GARENNE|AGEN[-\s]LE[-\s]PASSAGE/gi,'Agen')
+    .split(/\s+/).map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' ');
+}
+
+function groupKey(h,d,m,a,al){return `${h}|${d}|${m}|${a}|${al}`;}
+
+function recalcGroupe(grp){
+  const nb=Math.floor(grp.courses.length/5);
+  grp.tranches=[];
+  for(let t=0;t<nb;t++){
+    const sl=grp.courses.slice(t*5,(t+1)*5);
+    grp.tranches.push(Math.round(sl.reduce((s,c)=>s+c.rk,0)/sl.length*10)/10);
+  }
+  grp.moyenne=grp.tranches.length>0?Math.round(grp.tranches.reduce((s,t)=>s+t,0)/grp.tranches.length*10)/10:null;
+}
+
+// ===== DB =====
+function saveDb(){try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){}}
+function loadDb(){try{const r=localStorage.getItem(DB_KEY);if(r)db=JSON.parse(r);}catch(e){}}
+
+function addToDb(hippo,dist,mode,age,alloc,disc,rk,date,winner){
+  const key=groupKey(hippo,dist,mode,age,alloc);
+  if(!db[disc][key]) db[disc][key]={hippo,dist,mode,age,alloc,disc,courses:[],tranches:[],moyenne:null};
+  const grp=db[disc][key];
+  if(grp.courses.some(c=>c.date===date&&c.cheval===winner)) return false;
+  grp.courses.push({date,cheval:winner,rang:1,rk,ferrure:'N/A',age});
+  recalcGroupe(grp);
+  return true;
+}
+
+// ===== STATS =====
+function updateStats(){
+  const all=[...Object.values(db.att),...Object.values(db.mon)];
+  document.getElementById('s-jours').textContent=totalJours;
+  document.getElementById('s-courses').textContent=totalCourses;
+  document.getElementById('s-rk').textContent=totalRkAdded;
+  document.getElementById('s-att').textContent=Object.keys(db.att).length;
+  document.getElementById('s-mon').textContent=Object.keys(db.mon).length;
+  document.getElementById('s-valid').textContent=all.filter(g=>g.moyenne!=null).length;
+}
+
+// ===== LOG =====
+function log(msg,type='info'){
+  const box=document.getElementById('log-box');
+  const line=document.createElement('div');
+  line.className=type;
+  const t=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  line.textContent=`[${t}] ${msg}`;
+  box.appendChild(line);
+  box.scrollTop=box.scrollHeight;
+  while(box.children.length>300) box.removeChild(box.firstChild);
+}
+
+// ===== PROXY =====
+async function proxyFetch(url){
+  const proxy=document.getElementById('proxyUrl').value.trim();
+  const resp=await fetch(`${proxy}?url=${encodeURIComponent(url)}`);
+  if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return await resp.text();
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ===== FORMAT DATE PMU =====
+// 2023-06-21 → 21062023
+function dateToPmu(dateStr){
+  const p=dateStr.split('-');
+  return p[2]+p[1]+p[0];
+}
+
+// ===== LIRE PROGRAMME D'UNE JOURNÉE =====
+// Retourne la liste de toutes les courses du jour
+async function getProgramme(dateStr){
+  const pmuDate=dateToPmu(dateStr);
+  const url=`https://offline.turfinfo.api.pmu.fr/rest/client/7/programme/${pmuDate}`;
+  const text=await proxyFetch(url);
+  const data=JSON.parse(text);
+  const courses=[];
+  const reunions=data?.programme?.reunions||[];
+  for(const r of reunions){
+    const ri=r.numOfficiel||r.numReunion;
+    const hippo=normHippo(r.libelleHippodrome||r.libelle||'?');
+    for(const c of (r.courses||[])){
+      courses.push({
+        ri, ci:c.numOrdre,
+        hippo, dateStr,
+        discipline:c.discipline,
+        dist:c.distance,
+        alloc:c.montantPrix,
+        isAuto:/AUTOSTART/i.test(c.categorieParticularite||'')
+      });
+    }
+  }
+  return courses;
+}
+
+// ===== LIRE LES RÉSULTATS D'UNE COURSE =====
+async function getCourseResult(dateStr,ri,ci){
+  const pmuDate=dateToPmu(dateStr);
+  const url=`https://offline.turfinfo.api.pmu.fr/rest/client/7/programme/${pmuDate}/R${ri}/C${ci}`;
+  const text=await proxyFetch(url);
+  const data=JSON.parse(text);
+  return data;
+}
+
+// ===== TEST API =====
+async function testApi(){
+  log('🔍 Test API PMU...','info');
+  try{
+    const text=await proxyFetch('https://offline.turfinfo.api.pmu.fr/rest/client/7/programme/21062023/R1/C4');
+    const data=JSON.parse(text);
+    log(`✅ API OK! Discipline: ${data.discipline}, Distance: ${data.distance}m, Alloc: ${fmtAlloc(data.montantPrix)}`,'ok');
+    log(`Hippodrome: ${data.libelleHippodrome||'?'}`,'ok');
+    const winner=data.participants?.find(p=>p.ordreArrivee===1);
+    if(winner){
+      const rk=parseRkPmu(winner.reductionKilometrique);
+      log(`Vainqueur: ${winner.nom}, Age: ${winner.age}ans, RK: ${fmt(rk)}`,'ok');
+    }else{
+      log('Pas de vainqueur trouvé','warn');
+    }
+    // Test programme journée
+    const prog=await getProgramme('2023-06-21');
+    log(`Programme 21/06/2023: ${prog.length} courses total`,'ok');
+    const trot=prog.filter(c=>/TROT/i.test(c.discipline||''));
+    log(`Dont trot: ${trot.length} courses`,'ok');
+  }catch(e){
+    log(`❌ Erreur: ${e.message}`,'err');
+  }
+}
+
+// ===== DATES =====
+function getDates(from,to){
+  const dates=[],cur=new Date(from),end=new Date(to);
+  while(cur<=end){dates.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
+  return dates;
+}
+
+// ===== SCRAPING PRINCIPAL =====
+async function startScraping(){
+  if(running) return;
+  running=true;stopFlag=false;
+  document.getElementById('btn-start').style.display='none';
+  document.getElementById('btn-stop').style.display='block';
+
+  const delay=parseInt(document.getElementById('delay').value)||400;
+  const dates=getDates(document.getElementById('dateFrom').value,document.getElementById('dateTo').value);
+
+  // Reprendre
+  let startIdx=0;
+  try{
+    const saved=JSON.parse(localStorage.getItem(SCRAPER_KEY)||'{}');
+    if(saved.lastDate){
+      const idx=dates.indexOf(saved.lastDate);
+      if(idx>0){startIdx=idx;totalJours=idx;totalRkAdded=saved.totalRk||0;totalCourses=saved.totalCourses||0;log(`♻️ Reprise depuis ${saved.lastDate} — ${totalRkAdded} RK déjà collectés`,'info');}
+    }
+  }catch(e){}
+
+  log(`🚀 Démarrage: ${dates.length} jours · API PMU JSON`,'info');
+
+  for(let di=startIdx;di<dates.length&&!stopFlag;di++){
+    const dateStr=dates[di];
+    totalJours=di+1;
+    const pct=Math.round((di/dates.length)*100);
+    document.getElementById('prog-fill').style.width=pct+'%';
+    document.getElementById('prog-pct').textContent=pct+'%';
+    document.getElementById('prog-txt').textContent=`Jour ${di+1}/${dates.length} — ${dateStr}`;
+    localStorage.setItem(SCRAPER_KEY,JSON.stringify({lastDate:dateStr,totalRk:totalRkAdded,totalCourses}));
+
+    try{
+      await sleep(delay);
+      if(stopFlag) break;
+
+      // Récupérer le programme du jour
+      const programme=await getProgramme(dateStr);
+      const trotCourses=programme.filter(c=>/TROT/i.test(c.discipline||''));
+
+      if(!trotCourses.length){
+        log(`📅 ${dateStr}: pas de trot (${programme.length} courses galop/obstacle)`,'dim');
+        continue;
+      }
+
+      log(`📅 ${dateStr}: ${trotCourses.length} courses trot`,'dim');
+
+      // Traiter chaque course trot
+      for(const course of trotCourses){
+        if(stopFlag) break;
+        await sleep(delay);
+
+        try{
+          const data=await getCourseResult(dateStr,course.ri,course.ci);
+
+          if(!data||!data.arriveeDefinitive){
+            log(`⏳ R${course.ri}C${course.ci}: pas encore de résultat`,'dim');
+            continue;
+          }
+
+          const disc=/MONTE/i.test(data.discipline)?'mon':'att';
+          const dist=data.distance||course.dist;
+          const alloc=data.montantPrix||course.alloc;
+          const hippo=normHippo(data.libelleHippodrome||course.hippo);
+          const isAuto=/AUTOSTART/i.test(data.categorieParticularite||'');
+          const mode=isAuto?'A':'V';
+
+          // Vainqueur
+          const participants=data.participants||[];
+          const winner=participants.find(p=>p.ordreArrivee===1);
+          if(!winner){
+            log(`⚠️ R${course.ri}C${course.ci}: pas de vainqueur`,'warn');
+            continue;
+          }
+
+          const rk=parseRkPmu(winner.reductionKilometrique);
+          if(!rk){
+            log(`⚠️ R${course.ri}C${course.ci}: pas de RK pour ${winner.nom}`,'warn');
+            continue;
+          }
+
+          // Âge directement dans le JSON !
+          const ageNum=winner.age;
+          if(!ageNum||ageNum<2||ageNum>25){
+            log(`⚠️ R${course.ri}C${course.ci}: âge invalide ${ageNum}`,'warn');
+            continue;
+          }
+          const age=ageNum>=7?'7+':String(ageNum);
+
+          totalCourses++;
+          const added=addToDb(hippo,dist,mode,age,alloc,disc,rk,dateStr,winner.nom);
+          if(added){
+            totalRkAdded++;
+            log(`✅ ${hippo} ${dist}m ${mode} ${age}ans ${fmtAlloc(alloc)} → ${fmt(rk)} (${winner.nom})`,'ok');
+            recentRk.unshift({date:dateStr,hippo,dist,mode,disc,age,alloc,rk,winner:winner.nom});
+            if(recentRk.length>50) recentRk.pop();
+            if(totalRkAdded%10===0){saveDb();updateStats();renderResults();}
+          }
+
+        }catch(e){
+          log(`❌ R${course.ri}C${course.ci}: ${e.message}`,'err');
+        }
+      }
+
+    }catch(e){
+      log(`❌ ${dateStr}: ${e.message}`,'err');
+    }
+
+    if(di%5===0){saveDb();updateStats();renderResults();}
+  }
+
+  saveDb();updateStats();renderResults();
+  running=false;stopFlag=false;
+  document.getElementById('btn-start').style.display='block';
+  document.getElementById('btn-stop').style.display='none';
+
+  if(!stopFlag){
+    document.getElementById('prog-fill').style.width='100%';
+    document.getElementById('prog-pct').textContent='100%';
+    log(`✅ Collecte terminée! ${totalRkAdded} RK sur ${totalCourses} courses trot`,'ok');
+    localStorage.removeItem(SCRAPER_KEY);
+  }else{
+    log(`⏹ Arrêté. ${totalRkAdded} RK collectés.`,'warn');
+  }
+}
+
+function stopScraping(){stopFlag=true;log('Arrêt en cours...','warn');}
+
+// ===== AFFICHAGE =====
+function renderResults(){
+  const c=document.getElementById('res-container');
+  if(!recentRk.length){c.innerHTML='<div class="empty">Lance la collecte pour voir les résultats</div>';return;}
+  let h='<div style="font-family:\'IBM Plex Mono\',monospace;font-size:0.56rem;color:var(--mut);margin-bottom:0.5rem">'+recentRk.length+' derniers RK</div>';
+  h+='<div style="overflow-x:auto"><table class="rk-table"><thead><tr><th>Date</th><th>Hippodrome</th><th>Dist.</th><th>Mode</th><th>Disc.</th><th>Âge</th><th>Alloc.</th><th>RK</th><th>Vainqueur</th></tr></thead><tbody>';
+  for(const r of recentRk){
+    h+=`<tr><td style="color:var(--mut)">${r.date}</td><td style="font-weight:600">${r.hippo}</td><td style="color:var(--acc)">${r.dist}m</td><td style="color:var(--mut)">${r.mode==='A'?'Auto':'Volté'}</td><td><span class="${r.disc==='att'?'badge-ok':'badge-p'}">${r.disc==='att'?'ATT':'MON'}</span></td><td style="color:var(--org)">${r.age}ans</td><td style="color:var(--mut)">${fmtAlloc(r.alloc)}</td><td class="rk-val">${fmt(r.rk)}</td><td style="color:var(--mut);font-size:0.55rem">${r.winner}</td></tr>`;
+  }
+  h+='</tbody></table></div>';
+  c.innerHTML=h;
+}
+
+// ===== EXPORT/IMPORT =====
+function exportDb(){
+  const blob=new Blob([JSON.stringify(db)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='rk-base-pmu-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  URL.revokeObjectURL(url);
+}
+function importDb(event){
+  const file=event.target.files[0];if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const imp=JSON.parse(e.target.result);
+      if(!imp.att||!imp.mon) throw new Error('Format invalide');
+      let added=0;
+      ['att','mon'].forEach(disc=>{
+        Object.entries(imp[disc]||{}).forEach(([key,grp])=>{
+          if(!db[disc][key]){db[disc][key]=grp;added++;}
+          else{grp.courses.forEach(c=>{if(!db[disc][key].courses.some(x=>x.date===c.date&&x.cheval===c.cheval)){db[disc][key].courses.push(c);added++;}});recalcGroupe(db[disc][key]);}
+        });
+      });
+      saveDb();updateStats();renderResults();
+      log(`✅ Import: ${added} entrées ajoutées`,'ok');
+    }catch(err){log(`❌ Import: ${err.message}`,'err');}
+    event.target.value='';
+  };
+  reader.readAsText(file);
+}
+function clearDb(){
+  if(!confirm('Effacer toute la base?')) return;
+  db={att:{},mon:{}};recentRk=[];
+  saveDb();updateStats();renderResults();
+  log('Base effacée','warn');
+}
+
+// ===== INIT =====
+loadDb();updateStats();renderResults();
+setInterval(saveDb,30000);
+</script>
+</body>
+</html>
